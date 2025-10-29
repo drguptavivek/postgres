@@ -8,13 +8,18 @@ services:
       PGPORT: 5432
       PGUSER: ${POSTGRES_USER:-postgres}
       PGPASSWORD_FILE: /run/secrets/POSTGRES_PASSWORD
+      # >>> App-specific variables <<<
+      APP_USER: fundusAppUser4   # <-- CHANGE THIS
+      APP_DB: fundusAppDb4       # <-- CHANGE THIS
+      APP_SCHEMA: fundusAppDb4   # <-- CHANGE THIS
+
     entrypoint: ["/bin/bash","-lc","/sql/dbtool.sh"]
     volumes:
       - ./apps/create_app.sql:/sql/create_app.sql:ro
       - ./apps/dbtool.sh:/sql/dbtool.sh:ro
     secrets:
       - POSTGRES_PASSWORD
-      - APP_PASSWORD      # <-- match secret name below
+      - APP_PASSWORD       
     networks:
       - pgnet
 
@@ -27,4 +32,4 @@ secrets:
   POSTGRES_PASSWORD:
     file: ./secrets/POSTGRES_PASSWORD
   APP_PASSWORD:
-    file: ./secrets/fundusApp_PASSWORD
+    file: ./secrets/fundusApp_PASSWORD4 # <-- CHANGE THIS To set / change password
