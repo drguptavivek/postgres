@@ -1,19 +1,37 @@
-# setting up a Postgres 18 container 
+# Setting up a Postgres 18 container 
 
-- bind mounted configs
-- PGAdmin
-- Backups
-- Applciatiopn spceific Dbs within same Postgres container with deicated userss, Dbs and passwords
+This repository contains configuration for running PostgreSQL 18 in Docker containers.
+See [official PostgreSQL Docker image](https://hub.docker.com/_/postgres) for more details.
+
+Features:
+- Bind mounted configs
+- PGAdmin web interface
+- [Automated backups](docs/backups.md)
+- [Application-specific databases](docs/App%20Dbs.md) within same PostgreSQL container with dedicated users, DBs and passwords
+
+## Documentation
+- [Setting up Application Databases](docs/App%20Dbs.md)
+- [Backup Configuration and Management](docs/backups.md)
+- [Generating Secrets](docs/Generate-secrets.md)
+- [Rotating Secrets](docs/Rotate-secrets.md)
 
 
-## ecrets
+## Clone the repo
+
+```bash
+git clone https://github.com/drguptavivek/postgres.git
+```
+
+## Secrets
+
+
 
 
 ```bash
 cd secrets
 touch PGADMIN_DEFAULT_EMAIL
 nano PGADMIN_DEFAULT_EMAIL
-# Type the enail ID, save, exit
+# Type the email ID, save, exit
 ```
 
 Generate the basic secrets
@@ -22,7 +40,7 @@ Generate the basic secrets
 - PGADMIN_DEFAULT_PASSWORD
 
 ```bash
-# SCRIPT - idempotent - does not owerwrite existing secrets
+# SCRIPT - idempotent - does not overwrite existing secrets
 chmod +x ./scripts/gen_secrets.sh 
 ./scripts/gen_secrets.sh 
 
@@ -48,7 +66,7 @@ bind-mounts editable Postgres config files from your host. We point Postgres to 
 docker compose -p pgstack -f docker-compose.init.yml up -d
 ```
 
-## Replciation User
+## Replication User
 
 ```bash
 chmod +x scripts/create_or_rotate_replicator.sh
@@ -82,15 +100,12 @@ Both network series should match
 - Conf.d strategy: put most of your tunables in conf.d/*.conf. Keep postgresql.conf short and stable (paths + includes).
  
 
- 
-
-
 ## UPGRADE to Postgres 18 from 17.3
 Postgres major versions aren’t binary-compatible, so the 18 server won’t start on a 17 data directory. 
 The container stays unhealthy because Postgres itself never comes up.
 
-So data formaty needs to be upgraded
-Also data mount also needs to chnage /var/lib/postgresql
+So data format needs to be upgraded.
+Also data mount needs to change to /var/lib/postgresql
 
 ### Upgrade data to version 18
 

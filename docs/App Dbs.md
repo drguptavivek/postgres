@@ -9,7 +9,7 @@ You need to define:
 
 
 ```bash
-chomd +x ./apps/dbtool.sh
+chmod +x ./apps/dbtool.sh
 ```
 
 1. Generate the app passwords
