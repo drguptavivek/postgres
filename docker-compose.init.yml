@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   pgdb:
     image: postgres:17.3
@@ -11,16 +9,12 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_PASSWORD_FILE: /run/secrets/POSTGRES_PASSWORD
       # Do NOT put POSTGRES_PASSWORD in .env when using secrets
     secrets:
       - POSTGRES_PASSWORD
-      - REPL_PASSWORD
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # init scripts (run only on first cluster init)
-      - ./init/00_hardening.sql:/docker-entrypoint-initdb.d/00_hardening.sql:ro
-      - ./init/01_append_pg_hba.sh:/docker-entrypoint-initdb.d/01_append_pg_hba.sh:ro
-      - ./init/02_create_replication_user.sh:/docker-entrypoint-initdb.d/02_create_replication_user.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER:-postgres}\" -d \"$${POSTGRES_DB:-postgres}\""]
       interval: 5s
@@ -45,9 +39,19 @@ services:
     image: dpage/pgadmin4
     container_name: pgadmin
     restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change-me}
+    # environment:
+    #  PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-change-me-immediately@example.com}
+    #  PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    secrets:
+      - PGADMIN_DEFAULT_EMAIL
+      - PGADMIN_DEFAULT_PASSWORD
+    entrypoint: 
+      ["/bin/sh","-c",
+      "export PGADMIN_DEFAULT_EMAIL=$(cat /run/secrets/PGADMIN_DEFAULT_EMAIL); 
+       export PGADMIN_DEFAULT_PASSWORD=$(cat /run/secrets/PGADMIN_DEFAULT_PASSWORD); 
+      exec /entrypoint.sh"]
+    volumes:
+      - pgadmindata:/var/lib/pgadmin  
     ports:
       - "127.0.0.1:16543:80"
     depends_on:
@@ -58,7 +62,8 @@ services:
 
 volumes:
   pgdata:
-
+  pgadmindata:
+  
 networks:
   pgnet:
     driver: bridge
@@ -67,5 +72,7 @@ networks:
 secrets:
   POSTGRES_PASSWORD:
     file: ./secrets/POSTGRES_PASSWORD
-  REPL_PASSWORD:
-    file: ./secrets/REPL_PASSWORD
+  PGADMIN_DEFAULT_PASSWORD:
+    file: ./secrets/PGADMIN_DEFAULT_PASSWORD
+  PGADMIN_DEFAULT_EMAIL:
+    file: ./secrets/PGADMIN_DEFAULT_EMAIL

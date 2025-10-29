@@ -21,7 +21,7 @@ gen() {
 # cluster admin + replication
 gen POSTGRES_PASSWORD
 gen REPL_PASSWORD
-
+gen PGADMIN_DEFAULT_PASSWORD
 # app users (add more here as needed)
 gen APP_A_PASSWORD
 gen APP_B_PASSWORD

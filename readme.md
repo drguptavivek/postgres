@@ -8,14 +8,32 @@ Perfect — here are **three separate Compose files** plus the tiny support file
 
 # 00) Secrets
 
+
+in the secrtes folder
+Also add 
+- PGADMIN_DEFAULT_EMAIL
+
+```
+cd secrets
+nano PGADMIN_DEFAULT_EMAIL
+# Type the enail ID, save, exit
+```
+
 Generate the basic secrets
+- POSTGRES_PASSWORD
+- REPL_PASSWORD
+- PGADMIN_DEFAULT_PASSWORD
+
+
 
 ```bash
+# SCRIPT - idempotent - does not owerwrite existing secrets
 ./scripts/gen_secrets.sh 
 
-# OR Superuser + replication (for compose.init.yml)
+# OR CMDLINE
 umask 177; openssl rand -base64 48 | tr -d '\n' > secrets/POSTGRES_PASSWORD
 umask 177; openssl rand -base64 48 | tr -d '\n' > secrets/REPL_PASSWORD
+umask 177; openssl rand -base64 48 | tr -d '\n' > secrets/PGADMIN_DEFAULT_PASSWORD
 
 ```
 
@@ -29,8 +47,6 @@ bind-mounts editable Postgres config files from your host. We point Postgres to 
 
 
 ```yaml
-version: "3.9"
-
 services:
   pgdb:
     image: postgres:17.3
@@ -42,17 +58,13 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_PASSWORD_FILE: /run/secrets/POSTGRES_PASSWORD
       # Do NOT put POSTGRES_PASSWORD in .env when using secrets
     secrets:
       - POSTGRES_PASSWORD
       - REPL_PASSWORD
-    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # ➜ Bind-mounted config (edit on host, container picks it up on restart)
-      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-      - ./config/conf.d:/etc/postgresql/conf.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER:-postgres}\" -d \"$${POSTGRES_DB:-postgres}\""]
       interval: 5s
@@ -94,6 +106,7 @@ volumes:
 networks:
   pgnet:
     driver: bridge
+    name: pgnet
 
 secrets:
   POSTGRES_PASSWORD:
@@ -103,28 +116,35 @@ secrets:
 ```
  
 
-### `init/02_create_replication_user.sh`
+### `scripts/02_create_rotate_replication_user.sh`
+
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Read secrets
-POSTGRES_PASSWORD_FILE="/run/secrets/POSTGRES_PASSWORD"
-REPL_PASSWORD_FILE="/run/secrets/REPL_PASSWORD"
+CONTAINER="${CONTAINER:-pgdb}"
+SECDIR="${SECDIR:-secrets}"
 
-export PGPASSWORD="$(cat "$POSTGRES_PASSWORD_FILE")"
-REPL_PASS="$(cat "$REPL_PASSWORD_FILE")"
+PG_PASS="$(tr -d '\n' < "${SECDIR}/POSTGRES_PASSWORD")"
+REPL_PASS="$(tr -d '\n' < "${SECDIR}/REPL_PASSWORD")"
 
-# Create REPLICATION user if missing
-psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" <<SQL
-DO \$\$
+docker exec -i -e PGPASSWORD="$PG_PASS" "$CONTAINER" \
+  psql -v ON_ERROR_STOP=1 -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}" \
+  -v REPL_PASSWORD="$REPL_PASS" <<'SQL'
+DO $do$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'replicator') THEN
-    CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD '${REPL_PASS}';
+    EXECUTE format('CREATE ROLE replicator WITH REPLICATION LOGIN PASSWORD %L', :'REPL_PASSWORD');
+  ELSE
+    -- rotate to match your file (idempotent if same)
+    EXECUTE format('ALTER ROLE replicator WITH PASSWORD %L', :'REPL_PASSWORD');
   END IF;
-END\$\$;
+END
+$do$;
 SQL
+echo "✓ replicator ensured/rotated"
+
 ```
 
 > **Setup**:
@@ -136,6 +156,10 @@ SQL
 > 
 > # Start / restart POSTGRES and PGAMDIN AND ADMINER containers
 > docker compose -f docker-compose.init.yml up -d
+> 
+> # REPLICATION USER
+> chmod +x scripts/create_or_rotate_replicator.sh
+> scripts/create_or_rotate_replicator.sh
 > 
 > # After editing config files:
 > docker restart pgdb
