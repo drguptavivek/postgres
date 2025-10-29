@@ -72,14 +72,11 @@ docker logs --tail 20 -f pgdb
 ```bash
 # Stop Postgres and move aside old data dir
 docker stop pgdb
-mv ./pgdata ./pgdata.bak.$(date +%s)
+docker volume rename pgdata18 pgdata18.bak.$(date +%s)
+docker volume create pgdata18
 
 # Extract a chosen base backup into a fresh data dir
-mkdir -p ./pgdata
-tar -xzf ./backups/full/2025-10-29_03-00-00/base.tar.gz -C ./pgdata
-
-# Ensure ownership (host varies; in container it's postgres:postgres)
-sudo chown -R 999:999 ./pgdata   # 999 is the postgres UID in the image
+docker run --rm -v pgdata18:/var/lib/postgresql/data -v "$(pwd)/backups":/backups ubuntu tar -xzf /backups/full/<your-backup-dir>/base.tar.gz -C /var/lib/postgresql/data
 
 # Start the DB; it will use recovery settings created by -R
 docker start pgdb
@@ -91,7 +88,6 @@ docker start pgdb
 
 ## Notes & knobs you can tweak
 
-* **Docker subnet in `01_append_pg_hba.sh`**: Confirm your bridge network CIDR (e.g. `docker network inspect pgnet`). Update `DOCKER_SUBNET` if needed.
 * **Security**: All passwords come from `./secrets/*` files (chmod 600). Never commit them.
 * **Retention**: The `pg_basebackup_runner` above doesn’t prune old backups; prune with a host cron or add a small cleanup step after the backup runs (tell me your retention policy and I’ll wire it in).
 * **RPO**: `pg_basebackup` once nightly means you can lose up to a day’s data. If you need tighter RPO, add **WAL archiving** (e.g., WAL-G to S3/MinIO) alongside or increase frequency.

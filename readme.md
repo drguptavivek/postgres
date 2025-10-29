@@ -69,8 +69,8 @@ docker compose -p pgstack -f docker-compose.init.yml up -d
 ## Replication User
 
 ```bash
-chmod +x scripts/create_or_rotate_replicator.sh
-scripts/create_or_rotate_replicator.sh
+chmod +x scripts/02_create_rotate_replication_user.sh
+scripts/02_create_rotate_replication_user.sh
 ```
 
 
