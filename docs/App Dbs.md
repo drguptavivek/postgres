@@ -8,23 +8,29 @@ You need to define:
 - myapp <- SCHEMA for myapp
 
 
+See: [./apps/dbtool.sh](../apps/dbtool.sh)
+
 ```bash
 chmod +x ./apps/dbtool.sh
 ```
 
 1. Generate the app passwords
 
+See: [./scripts/gen_secrets.sh](../scripts/gen_secrets.sh)
+
 ```bash
-# add app name to /scripts/gen_secrets.sh after line 25 
+# add app name to /scripts/gen_secrets.sh after line 25
 #    gen fundusApp_PASSWORD4
 awk '($0=="# Add_New_Above_Here" && !r){print "gen fundusApp_PASSWORD4"} {print} $0=="# Add_New_Above_Here"{r=1}' ./scripts/gen_secrets.sh > ./scripts/.gen_secrets.sh.tmp && mv ./scripts/.gen_secrets.sh.tmp ./scripts/gen_secrets.sh
 
 chmod +x ./scripts/gen_secrets.sh
+
 ./scripts/gen_secrets.sh
 
 ```
 
 2. Add Apps DB schema username to `services.dbtool.secrets`:
+
 
 ```yaml
 services:

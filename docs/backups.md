@@ -10,11 +10,15 @@ sudo mkdir -p backups && sudo chown -R 999:999 backups
 REPL_PASSWORD already should exist from a previous run of `gen_secrets.sh`
 
 ### Create backup User in main container
+See: [./scripts/02_create_rotate_replication_user.sh](../scripts/02_create_rotate_replication_user.sh)
+
 ```bash
-./scripts/02_create_rotate_replication_user.sh   
+./scripts/02_create_rotate_replication_user.sh
 ```
 
 ### Bring up the backup runner container
+See: [docker-compose.backup.yml](../docker-compose.backup.yml)
+
 ```bash
 docker compose -p pgstack -f docker-compose.backup.yml up -d
 
@@ -23,10 +27,12 @@ docker logs -f pg_basebackup_runner
 ```
 ## Confirm the IP address is in same  range as 
 
+See: [config/pg_hba.conf](../config/pg_hba.conf)
+
 ```bash
 docker inspect  pgdb | grep IPAddress
 docker inspect  pg_basebackup_runner | grep IPAddress
-grep "replication" config/pg_hba.conf 
+grep "replication" config/pg_hba.conf
 
 ```
 In our case, all were on 172.18.0.2 network.
@@ -34,6 +40,8 @@ If the network range of containers is different, edit the `config/pg_hba.conf` t
 
 
 ## Test a Backup
+
+See: [pg_do_basebackup.sh](../bin/pg_do_basebackup.sh)
 
 ```bash
 docker exec -u root pg_basebackup_runner /usr/local/bin/pg_do_basebackup.sh
@@ -98,10 +106,12 @@ You don’t need hard-coded `echo` lines—generate strong random secrets safely
 
 # Quick one-liners (Linux/macOS)
 
+See: [./scripts/gen_secrets.sh](../scripts/gen_secrets.sh)
+
 ```bash
 # Creates ./secrets if missing, sets 600 perms, and generates strong, newline-free secrets
 
-./scripts/gen_secrets.sh  
+./scripts/gen_secrets.sh
 
 
 # Superuser + replication (for compose.init.yml)

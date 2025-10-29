@@ -4,7 +4,7 @@ This repository contains configuration for running PostgreSQL 18 in Docker conta
 See [official PostgreSQL Docker image](https://hub.docker.com/_/postgres) for more details.
 
 Features:
-- Bind mounted configs
+- [Bind mounted configs](config/)
 - PGAdmin web interface
 - [Automated backups](docs/backups.md)
 - [Application-specific databases](docs/App%20Dbs.md) within same PostgreSQL container with dedicated users, DBs and passwords
@@ -14,6 +14,11 @@ Features:
 - [Backup Configuration and Management](docs/backups.md)
 - [Generating Secrets](docs/Generate-secrets.md)
 - [Rotating Secrets](docs/Rotate-secrets.md)
+
+## Scripts and Configuration Files
+- [Scripts](scripts/) - Utility scripts for database management
+- [Configuration Files](config/) - PostgreSQL configuration files
+- [Docker Compose Files](docker-compose.init.yml) - Container orchestration
 
 
 ## Clone the repo
@@ -39,10 +44,12 @@ Generate the basic secrets
 - REPL_PASSWORD
 - PGADMIN_DEFAULT_PASSWORD
 
+See: [./scripts/gen_secrets.sh](scripts/gen_secrets.sh)
+
 ```bash
 # SCRIPT - idempotent - does not overwrite existing secrets
-chmod +x ./scripts/gen_secrets.sh 
-./scripts/gen_secrets.sh 
+chmod +x ./scripts/gen_secrets.sh
+./scripts/gen_secrets.sh
 
 # OR CMDLINE
 umask 177; openssl rand -base64 48 | tr -d '\n' > secrets/POSTGRES_PASSWORD
@@ -67,6 +74,8 @@ docker compose -p pgstack -f docker-compose.init.yml up -d
 ```
 
 ## Replication User
+
+See: [scripts/02_create_rotate_replication_user.sh](scripts/02_create_rotate_replication_user.sh)
 
 ```bash
 chmod +x scripts/02_create_rotate_replication_user.sh
@@ -97,11 +106,6 @@ docker exec -u postgres   -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSW
 
 
 docker exec -u postgres -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"  pgdb psql -h pgdb -U postgres -d postgres -c "SHOW search_path;"
-
-
-
-
-
 ```
 
 ## RUN a SQL Script inside container
@@ -110,14 +114,16 @@ docker exec -u postgres -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWOR
 docker exec -i -u postgres -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"  pgdb psql -h pgdb -U postgres \
   -d DataBaseName   -c "SET search_path TO ;" \
   -v ON_ERROR_STOP=1 -f - \
-   < scipt_To_Run.sql
+   < script_To_Run.sql
 ```
 
 ## Ensure correct network in hba.conf
 
+See: [config/pg_hba.conf](config/pg_hba.conf)
+
 ```bash
 docker inspect  pgdb | grep IPAddress
-grep "replication" config/pg_hba.conf 
+grep "replication" config/pg_hba.conf
 ```
 Both network series should match
 
@@ -126,8 +132,8 @@ Both network series should match
 ### Notes & gotchas
 - First init vs existing data: If you already initialized PGDATA with different settings, Postgres will still honor the config_file we pass in command:. That’s why we explicitly set config_file — it works both on a fresh and an existing data directory.
 - Permissions: Files are mounted :ro; Postgres only needs read access. Keep them owned by you on the host.
-- Network CIDR: Adjust the 172.18.0.0/16 in pg_hba.conf to match docker network inspect pgnet.
-- Conf.d strategy: put most of your tunables in conf.d/*.conf. Keep postgresql.conf short and stable (paths + includes).
+- Network CIDR: Adjust the 172.18.0.0/16 in [config/pg_hba.conf](config/pg_hba.conf) to match docker network inspect pgnet.
+- Conf.d strategy: put most of your tunables in [config/conf.d/*.conf](config/conf.d/). Keep [config/postgresql.conf](config/postgresql.conf) short and stable (paths + includes).
  
 
 ## UPGRADE to Postgres 18 from 17.3

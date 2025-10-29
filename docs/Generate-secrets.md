@@ -1,6 +1,6 @@
 # Idempotent generator script  
 
-Create `scripts/gen_secrets.sh`:
+Create [`scripts/gen_secrets.sh`](../scripts/gen_secrets.sh):
 
 ```bash
 #!/usr/bin/env bash
@@ -45,6 +45,8 @@ done
 ```
 
 Then:
+
+See: [scripts/gen_secrets.sh](../scripts/gen_secrets.sh)
 
 ```bash
 chmod +x scripts/gen_secrets.sh
