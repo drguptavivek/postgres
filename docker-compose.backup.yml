@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  pg_basebackup_runner:
+    image: postgres:17.3
+    container_name: pg_basebackup_runner
+    restart: always
+    depends_on:
+      pgdb:
+        condition: service_healthy
+    environment:
+      PGHOST: pgdb
+      PGPORT: 5432
+      PGUSER: replicator
+      PGPASSWORD_FILE: /run/secrets/REPL_PASSWORD
+      BACKUP_DIR: /backups/full
+      SCHEDULE_CRON: "0 3 * * *"   # daily at 03:00
+    secrets:
+      - REPL_PASSWORD
+    volumes:
+      - ./backups:/backups
+    networks:
+      - pgnet
+    entrypoint: ["/bin/bash", "-lc"]
+    command: >
+      '
+      export PGPASSWORD="$(cat $PGPASSWORD_FILE)";
+      echo "${SCHEDULE_CRON} pg_basebackup -h ${PGHOST} -p ${PGPORT} -U ${PGUSER} \
+        -D ${BACKUP_DIR}/$(date +\%F_\%H-\%M-\%S) \
+        -X stream -R -F tar -z --progress --write-recovery-conf \
+        || echo \"pg_basebackup failed on $(date)\" 1>&2" | crontab - ;
+      crond -f -L /dev/stdout
+      '
+networks:
+  pgnet:
+    external: false
+    name: pgnet
+
+secrets:
+  REPL_PASSWORD:
+    file: ./secrets/REPL_PASSWORD

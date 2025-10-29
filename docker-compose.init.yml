@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  pgdb:
+    image: postgres:17.3
+    container_name: pgdb
+    restart: always
+    shm_size: 128mb
+    ports:
+      - "127.0.0.1:5432:5432"     # local-only exposure
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      # Do NOT put POSTGRES_PASSWORD in .env when using secrets
+    secrets:
+      - POSTGRES_PASSWORD
+      - REPL_PASSWORD
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # init scripts (run only on first cluster init)
+      - ./init/00_hardening.sql:/docker-entrypoint-initdb.d/00_hardening.sql:ro
+      - ./init/01_append_pg_hba.sh:/docker-entrypoint-initdb.d/01_append_pg_hba.sh:ro
+      - ./init/02_create_replication_user.sh:/docker-entrypoint-initdb.d/02_create_replication_user.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER:-postgres}\" -d \"$${POSTGRES_DB:-postgres}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - pgnet
+
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: always
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      pgdb:
+        condition: service_healthy
+    networks:
+      - pgnet
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-change-me}
+    ports:
+      - "127.0.0.1:16543:80"
+    depends_on:
+      pgdb:
+        condition: service_healthy
+    networks:
+      - pgnet
+
+volumes:
+  pgdata:
+
+networks:
+  pgnet:
+    driver: bridge
+    name: pgnet
+
+secrets:
+  POSTGRES_PASSWORD:
+    file: ./secrets/POSTGRES_PASSWORD
+  REPL_PASSWORD:
+    file: ./secrets/REPL_PASSWORD
