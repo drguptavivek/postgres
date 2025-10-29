@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   dbtool:
-    image: postgres:17.3
+    image: postgres:18
     container_name: dbtool
     restart: "no"
     depends_on:

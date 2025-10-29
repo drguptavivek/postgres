@@ -405,3 +405,30 @@ umask 177; openssl rand -base64 48 | tr -d '\n' > secrets/APP_B_PASSWORD
 * `-base64 48` ⇒ ~64 chars; high entropy.
 * `tr -d '\n'` strips newline so the password is a single line.
 
+
+
+
+
+## UPGRADE to Postgres 18 from 17.3
+Postgres major versions aren’t binary-compatible, so the 18 server won’t start on a 17 data directory. 
+The container stays unhealthy because Postgres itself never comes up.
+
+So data formaty needs to be upgraded
+Also data mount also needs to chnage /var/lib/postgresql
+
+```
+docker  stop pgdb
+docker volume create pgdata18 
+docker run --rm   -v pgdata:/var/lib/postgresql/old/data   -v pgdata18:/var/lib/postgresql/new/data   tianon/postgres-upgrade:17-to-18
+
+
+
+
+
+# in docker-compose.yml (pgdb service)
+volumes:
+  - pgdata18:/var/lib/postgresql/
+
+
+
+```
