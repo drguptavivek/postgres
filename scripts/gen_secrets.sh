@@ -25,6 +25,7 @@ gen PGADMIN_DEFAULT_PASSWORD
 # app users (add more here as needed)
 gen APP_A_PASSWORD
 gen APP_B_PASSWORD
+gen fundusApp_PASSWORD
 
 # sanity: show lengths (not contents)
 for f in "$dir"/*; do

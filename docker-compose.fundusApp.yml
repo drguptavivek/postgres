@@ -1,0 +1,30 @@
+services:
+  dbtool:
+    image: postgres:18
+    container_name: dbtool
+    restart: "no"
+    environment:
+      PGHOST: pgdb
+      PGPORT: 5432
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD_FILE: /run/secrets/POSTGRES_PASSWORD
+    entrypoint: ["/bin/bash","-lc","/sql/dbtool.sh"]
+    volumes:
+      - ./apps/create_app.sql:/sql/create_app.sql:ro
+      - ./apps/dbtool.sh:/sql/dbtool.sh:ro
+    secrets:
+      - POSTGRES_PASSWORD
+      - APP_PASSWORD      # <-- match secret name below
+    networks:
+      - pgnet
+
+networks:
+  pgnet:
+    external: true
+    name: pgnet
+
+secrets:
+  POSTGRES_PASSWORD:
+    file: ./secrets/POSTGRES_PASSWORD
+  APP_PASSWORD:
+    file: ./secrets/fundusApp_PASSWORD

@@ -290,6 +290,9 @@ GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA :APP_SCHEMA TO :APP_USER;
 >
 > # Run the one-shot job:
 > docker compose -f docker-compose.apps.yml run --rm dbtool
+
+> docker compose -f  ocker-compose.fundusApp  run --rm dbtool
+
 > ```
 
 ### Your app connects with
@@ -420,15 +423,21 @@ Also data mount also needs to chnage /var/lib/postgresql
 docker  stop pgdb
 docker volume create pgdata18 
 docker run --rm   -v pgdata:/var/lib/postgresql/old/data   -v pgdata18:/var/lib/postgresql/new/data   tianon/postgres-upgrade:17-to-18
+```
+
+# in docker-compose.init.yml
+```
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
 
-
-
-
-# in docker-compose.yml (pgdb service)
 volumes:
-  - pgdata18:/var/lib/postgresql/
+  pgdata18:
+  pgadmindata:
 
+```
 
-
+```bash
+docker compose -f docker-compose.init.yml up -d
+docker logs pgdb
 ```

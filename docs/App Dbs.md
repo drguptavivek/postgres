@@ -1,4 +1,75 @@
 
+## ADDING A NEW APP
+ To add **one new app** (say `myapp`) to `docker-compose.apps.yml`, make **exactly these edits**:
+
+You need to define:
+- myapp_user < -- User for myapp
+- myapp_db <--- db for myapp
+- myapp <- SCHEMA for myapp
+
+
+1. **Add its secret to `services.dbtool.secrets`:**
+
+```yaml
+services:
+  dbtool:
+    # ...unchanged...
+    secrets:
+      - POSTGRES_PASSWORD
+      - APP_A_PASSWORD
+      - APP_B_PASSWORD
+      - APP_MYAPP_PASSWORD          # ← add this line
+```
+
+2. **Add a new `psql` stanza to `services > dbtool > command` in the doicker-compose.apps.yml:**
+
+```bash
+# Create MyApp
+psql -v ON_ERROR_STOP=1 -d postgres \
+  -v APP_USER=myapp_user \
+  -v APP_DB=myapp_db \
+  -v APP_SCHEMA=myapp \
+  -v APP_PASSWORD="$(cat /run/secrets/APP_MYAPP_PASSWORD)" \
+  -f /sql/create_app.sql;
+```
+Place it after the App B block; keep the trailing semicolon.
+
+3. **Declare the secret at the root `secrets:` section in the doicker-compose.apps.yml:**
+
+```yaml
+secrets:
+  POSTGRES_PASSWORD:
+    file: ./secrets/POSTGRES_PASSWORD
+  APP_A_PASSWORD:
+    file: ./secrets/APP_A_PASSWORD
+  APP_B_PASSWORD:
+    file: ./secrets/APP_B_PASSWORD
+  APP_MYAPP_PASSWORD:                 # ← add this block
+    file: ./secrets/APP_MYAPP_PASSWORD
+```
+
+
+
+---
+
+### **Usage** 
+
+```bash
+# Prepare secrets for each app user:
+# add app name to /scripts/gen_secrets.sh after line 25 
+#   -> add: gen APP_MYAPP_PASSWORD
+# generate secret by running the app
+./scripts/gen_secrets.sh
+
+# Run the one-shot job:
+docker compose -f docker-compose.apps.yml run --rm dbtool
+```
+
+### Your app connects with
+
+```
+postgresql://myapp_user:<contents of secrets/APP_MYAPP_PASSWORD>@pgdb:5432/myapp_db?search_path=myapp
+```
 
 #  `docker-compose.apps.yml`
 
@@ -136,77 +207,7 @@ BEGIN
 END$$;
 
 ```
-## ADDING A NEW APP
- To add **one new app** (say `myapp`) to `docker-compose.apps.yml`, make **exactly these edits**:
 
-You need to define:
-- myapp_user < -- User for myapp
-- myapp_db <--- db for myapp
-- myapp <- SCHEMA for myapp
-
-
-1. **Add its secret to `services.dbtool.secrets`:**
-
-```yaml
-services:
-  dbtool:
-    # ...unchanged...
-    secrets:
-      - POSTGRES_PASSWORD
-      - APP_A_PASSWORD
-      - APP_B_PASSWORD
-      - APP_MYAPP_PASSWORD          # ← add this line
-```
-
-2. **Add a new `psql` stanza to `services > dbtool > command` in the doicker-compose.apps.yml:**
-
-```bash
-# Create MyApp
-psql -v ON_ERROR_STOP=1 -d postgres \
-  -v APP_USER=myapp_user \
-  -v APP_DB=myapp_db \
-  -v APP_SCHEMA=myapp \
-  -v APP_PASSWORD="$(cat /run/secrets/APP_MYAPP_PASSWORD)" \
-  -f /sql/create_app.sql;
-```
-Place it after the App B block; keep the trailing semicolon.
-
-3. **Declare the secret at the root `secrets:` section in the doicker-compose.apps.yml:**
-
-```yaml
-secrets:
-  POSTGRES_PASSWORD:
-    file: ./secrets/POSTGRES_PASSWORD
-  APP_A_PASSWORD:
-    file: ./secrets/APP_A_PASSWORD
-  APP_B_PASSWORD:
-    file: ./secrets/APP_B_PASSWORD
-  APP_MYAPP_PASSWORD:                 # ← add this block
-    file: ./secrets/APP_MYAPP_PASSWORD
-```
-
-
-
----
-
-### **Usage** 
-
-```bash
-# Prepare secrets for each app user:
-# add app name to /scripts/gen_secrets.sh after line 25 
-#   -> add: gen APP_MYAPP_PASSWORD
-# generate secret by running the app
-./scripts/gen_secrets.sh
-
-# Run the one-shot job:
-docker compose -f docker-compose.apps.yml run --rm dbtool
-```
-
-### Your app connects with
-
-```
-postgresql://myapp_user:<contents of secrets/APP_MYAPP_PASSWORD>@pgdb:5432/myapp_db?search_path=myapp
-```
 
 > That’s it—only those three compose edits (plus the network check). No other changes needed.
 
