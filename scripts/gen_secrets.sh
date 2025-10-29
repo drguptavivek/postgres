@@ -25,7 +25,7 @@ gen PGADMIN_DEFAULT_PASSWORD
 
 # app users (add more here as needed)
 gen fundusApp_PASSWORD
-gen APP_A_PASSWORD
+gen appUser1Password
 gen APP_B_PASSWORD
 gen fundusApp_PASSWORD4
 gen fundusApp_PASSWORD4

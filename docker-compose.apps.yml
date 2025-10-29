@@ -1,51 +1,35 @@
-version: "3.9"
-
 services:
   dbtool:
     image: postgres:18
     container_name: dbtool
     restart: "no"
-    depends_on:
-      pgdb:
-        condition: service_healthy
     environment:
       PGHOST: pgdb
       PGPORT: 5432
       PGUSER: ${POSTGRES_USER:-postgres}
       PGPASSWORD_FILE: /run/secrets/POSTGRES_PASSWORD
-    entrypoint: ["/bin/bash", "-lc"]
-    command: >
-      '
-      export PGPASSWORD="$(cat $PGPASSWORD_FILE)";
-      # Create App A
-      psql -v ON_ERROR_STOP=1 -d postgres \
-        -v APP_USER=appA_user -v APP_DB=appA_db -v APP_SCHEMA=appA \
-        -v APP_PASSWORD="$(cat /run/secrets/APP_A_PASSWORD)" \
-        -f /sql/create_app.sql;
-      # Create App B (example second app)
-      psql -v ON_ERROR_STOP=1 -d postgres \
-        -v APP_USER=appB_user -v APP_DB=appB_db -v APP_SCHEMA=appB \
-        -v APP_PASSWORD="$(cat /run/secrets/APP_B_PASSWORD)" \
-        -f /sql/create_app.sql;
-      '
+      # >>> App-specific variables <<<
+      APP_USER: appUser1      # <-- CHANGE THIS
+      APP_DB: appDb1          # <-- CHANGE THIS
+      APP_SCHEMA: appSchema1  # <-- CHANGE THIS
+
+    entrypoint: ["/bin/bash","-lc","/sql/dbtool.sh"]
     volumes:
       - ./apps/create_app.sql:/sql/create_app.sql:ro
+      - ./apps/dbtool.sh:/sql/dbtool.sh:ro
     secrets:
       - POSTGRES_PASSWORD
-      - APP_A_PASSWORD
-      - APP_B_PASSWORD
+      - APP_PASSWORD       
     networks:
       - pgnet
 
 networks:
   pgnet:
     external: true
-    name: pgnet   # same network name as in the init compose
+    name: pgnet
 
 secrets:
   POSTGRES_PASSWORD:
     file: ./secrets/POSTGRES_PASSWORD
-  APP_A_PASSWORD:
-    file: ./secrets/APP_A_PASSWORD
-  APP_B_PASSWORD:
-    file: ./secrets/APP_B_PASSWORD
+  APP_PASSWORD:
+    file: ./secrets/appUser1Password  # <-- CHANGE THIS To set / change password
