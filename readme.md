@@ -79,9 +79,39 @@ scripts/02_create_rotate_replication_user.sh
 ```bash
 docker restart pgdb
 # Or reload when supported:
-docker exec -it pgdb psql -U postgres -c "SELECT pg_reload_conf();"
+
+# show hba_file path
+docker exec -u postgres   -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"   pgdb psql -h pgdb -U postgres -d postgres -c "SHOW hba_file;"
+
+# show effective HBA rules
+docker exec -u postgres   -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"   pgdb psql -h pgdb -U postgres -d postgres -c "SELECT * FROM pg_hba_file_rules;"
+
+# show paths
+docker exec -u postgres   -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"  pgdb psql -h pgdb -U postgres -d postgres -c "SHOW config_file; SHOW hba_file; SHOW ident_file; SHOW data_directory;"
+
+# show file-sourced settings and whether applied
+docker exec -u postgres   -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"   pgdb psql -h pgdb -U postgres -d postgres -c "SELECT sourcefile, sourceline, name, setting, applied, error FROM pg_file_settings ORDER BY sourcefile, sourceline;"
+
+# show settings that need restart
+docker exec -u postgres   -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"   pgdb psql -h pgdb -U postgres -d postgres -c "SELECT name, setting, pending_restart FROM pg_settings WHERE pending_restart;"
+
+
+docker exec -u postgres -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"  pgdb psql -h pgdb -U postgres -d postgres -c "SHOW search_path;"
+
+
+
+
+
 ```
 
+## RUN a SQL Script inside container
+
+```bash
+docker exec -i -u postgres -e PGPASSWORD="$(tr -d '\r\n' < secrets/POSTGRES_PASSWORD)"  pgdb psql -h pgdb -U postgres \
+  -d DataBaseName   -c "SET search_path TO ;" \
+  -v ON_ERROR_STOP=1 -f - \
+   < scipt_To_Run.sql
+```
 
 ## Ensure correct network in hba.conf
 

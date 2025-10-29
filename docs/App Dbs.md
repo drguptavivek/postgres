@@ -80,9 +80,16 @@ docker compose -p pgstack \
 
 ### Your app connects with
 
-```
-postgresql://fundusAppUser2:<contents of secret APP_MYAPP_PASSWORD>@pgdb:5432/fundusAppDb2?search_path=fundusAppSchema2
-```
- 
+```bash
+docker exec -u postgres -e PGPASSWORD="$(tr -d '\r\n' < secrets/fundusApp_PASSWORD4)"  pgdb psql -h pgdb -U fundusAppUser4 -d fundusAppDb4 -c "SHOW search_path;"
+
+#      search_path       
+#------------------------
+# "fundusAppSchema4", public
+#(1 row)
+
+postgresql://fundusAppUser4:<contents_of_secret_fundusApp_PASSWORD4>@pgdb:5432/fundusAppDb4?search_path=fundusAppSchema4
 
 docker exec -it pgdb psql -h pgdb -p 5432 -U fundusAppUser4 -d fundusAppDb4 -v ON_ERROR_STOP=1 -c 'SHOW search_path;'
+
+```

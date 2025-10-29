@@ -11,7 +11,7 @@ services:
       # >>> App-specific variables <<<
       APP_USER: fundusAppUser4   # <-- CHANGE THIS
       APP_DB: fundusAppDb4       # <-- CHANGE THIS
-      APP_SCHEMA: fundusAppDb4   # <-- CHANGE THIS
+      APP_SCHEMA: fundusAppSchema4   # <-- CHANGE THIS
 
     entrypoint: ["/bin/bash","-lc","/sql/dbtool.sh"]
     volumes:
