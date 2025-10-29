@@ -15,6 +15,9 @@ services:
       - POSTGRES_PASSWORD
     volumes:
       - pgdata18:/var/lib/postgresql
+      - ./config/postgresql.conf:/var/lib/postgresql/18/docker/postgresql.conf
+      - ./config/pg_hba.conf:/var/lib/postgresql/18/docker/pg_hba.conf
+      - ./config/conf.d:/var/lib/postgresql/18/docker/conf.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER:-postgres}\" -d \"$${POSTGRES_DB:-postgres}\""]
       interval: 5s
@@ -58,7 +61,7 @@ services:
       pgdb:
         condition: service_healthy
     networks:
-      - pgnet
+      - pgnet   
 
 volumes:
   pgdata18:
